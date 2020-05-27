@@ -65,10 +65,14 @@ function helpCommand(message, args) {
 async function threadCommand(message, args) {
     if (args[0] == 'create') { // Create a thread
         const threadRoleID = await guildThreadRole.get(message.guild.id);
-        const threadRole = message.guild.roles.cache.get(threadRoleID)
-        const modRole = await guildModRole.get(message.guild.id);
+        const threadRole = message.guild.roles.cache.get(threadRoleID);
+        const modRoleID = await guildModRole.get(message.guild.id);
+        const modRole = message.guild.roles.cache.get(modRoleID);
         if (!threadRole) {
             return message.channel.send(':no_entry: A server administrator must set the thread role using `f!settings role <role ID>` before this command can be used.');
+        }
+        if (!modRole) {
+            return message.channel.send(':no_entry: A server administrator must set the moderator role using `f!settings modrole <role ID>` before this command can be used.');
         }
         if (!message.member.roles.cache.has(threadRoleID)) {
             return message.channel.send(':no_entry: Performing this action requires the role with name: `' + threadRole.name + '`.');
@@ -101,7 +105,7 @@ async function threadCommand(message, args) {
                     deny: ['VIEW_CHANNEL'],
                 },
                 {
-                    id: modRole,
+                    id: modRole.id,
                     allow: ['SEND_MESSAGES','VIEW_CHANNEL','MANAGE_MESSAGES'],
                 }
             ],
