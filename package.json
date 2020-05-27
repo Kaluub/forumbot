@@ -1,0 +1,20 @@
+{
+  "name": "forobot",
+  "version": "0.1.0",
+  "description": "Discord bot designed to imitate a forum.",
+  "main": "app.js",
+  "dependencies": {
+    "@keyv/sqlite": "^2.0.2",
+    "discord.js": "^12.1.1",
+    "keyv": "^4.0.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Kaluub#1527",
+  "license": "ISC",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
+  }
+}
