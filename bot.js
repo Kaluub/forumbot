@@ -56,10 +56,96 @@ function handle(message) {
 };
 
 function helpCommand(message, args) {
-    if (devAccessArray.includes(message.author.id)) {
-        return
+    if (!args[0] && devAccessArray.includes(message.author.id)) {
+        const embed = new Discord.MessageEmbed()
+            .setColor('#00dd00')
+            .setTimestamp()
+            .setAuthor('ForoBot Developer Help Menu',client.user.avatarURL({dynamic: true, format: "png", size: 64}))
+            .setDescription('This is the help menu.')
+            .addFields(
+                {name:'`f!dev`',value:'Type `f!help dev` for the developer help menu.'},
+                {name:'`f!database`',value:'Type `f!help database` for the database help menu.'},
+                {name:'`f!threads`',value:'Type `f!help threads` for the threads help menu.'},
+                {name:'`f!settings`',value:'Type `f!help settings` for the settings help menu.'},
+                {name:'`f!id`',value:'This command allows you to check the ID of a channel or a category.'}
+            )
+            .setFooter(`ForoBot Help Menu (${message.author.tag})`);
+        return message.channel.send(embed);
     };
-    return
+    if (args[0] == 'thread') {
+        const embed = new Discord.MessageEmbed()
+            .setColor('#00dd00')
+            .setTimestamp()
+            .setAuthor('ForoBot Help Menu',client.user.avatarURL({dynamic: true, format: "png", size: 64}))
+            .setDescription('This is the thread help menu. Some of these commands could be restricted to certain roles.\nIf a command is restricted to the thread role, it will include `(TR)` in the title.\nIf a command is restricted to the moderator role, it will include `(MR)` in the title.')
+            .addFields(
+                {name:'`f!thread`',value:'This is the prefix for all of these commands.'},
+                {name:'`f!thread create {name}` (TR)',value:'Creates a thread. Access the new channel and start typing your new thread.'},
+                {name:'`f!thread publish` (TR)',value:'Publishes a thread. Once a thread is published, anyone can read it and anyone can start replying to it.'},
+                {name:'`f!thread delete` (MR)',value:'Deletes a thread. Once a thread is deleted, nobody can read it and the content is not saved anywhere. This command can also be used by the thread starter.'},
+                {name:'`f!thread lock` (MR)',value:'Locks a thread. Once a thread is locked, anyone can read it but nobody can reply to it.'}
+            )
+            .setFooter(`ForoBot Help Menu (${message.author.tag})`);
+        return message.channel.send(embed);
+    };
+    if (args[0] == 'settings') {
+        const embed = new Discord.MessageEmbed()
+            .setColor('#00dd00')
+            .setTimestamp()
+            .setAuthor('ForoBot Help Menu',client.user.avatarURL({dynamic: true, format: "png", size: 64}))
+            .setDescription('This is the settings help menu.')
+            .addFields(
+                {name:'`f!settings`',value:'This is the prefix for all of these commands.'},
+                {name:'`f!settings threadrole`',value:'Modifies the role required to make threads. To set this, a member requires the `Manage Server` permission.'},
+                {name:'`f!settings threadcategory`',value:'Modifies the category where threads are created. To set this, a member requires the `Manage Server` permission.'},
+                {name:'`f!settings modrole`',value:'Modifies the role required to perform moderation actions. To set this, a member requires the `Manage Server` permission.'}
+            )
+            .setFooter(`ForoBot Help Menu (${message.author.tag})`);
+        return message.channel.send(embed);
+    }
+    if (devAccessArray.includes(message.author.id) && args[0] == 'database') {
+        const embed = new Discord.MessageEmbed()
+            .setColor('#00dd00')
+            .setTimestamp()
+            .setAuthor('ForoBot Developer Help Menu (`f!database`)',client.user.avatarURL({dynamic: true, format: "png", size: 64}))
+            .setDescription('This is the database help menu.')
+            .addFields(
+                {name:'`f!database`',value:'This is the main command. Database commands start with `f!database`. Other developer commands can be seen with `f!help dev`.'},
+                {name:'`f!database threadrole [guild ID]`',value:'This command allows you to view data from the thread role database.'},
+                {name:'`f!database threadcategory [guild ID]`',value:'This command allows you to view data from the thread category database.'},
+                {name:'`f!database modrole [guild ID]`',value:'This command allows you to view data from the moderator role database.'},
+                {name:'`f!database add {database} {value 1 (guild ID)} {value 2 (role/channel ID)}`',value:'This command allows you to add/edit data in a database.'},
+                {name:'`f!database remove {database} {value 1 (guild ID)}`',value:'This command allows you to remove data from a database.'})
+            .setFooter(`ForoBot Help Menu (${message.author.tag})`);
+        return message.channel.send(embed);
+    };
+    if (devAccessArray.includes(message.author.id) && args[0] == 'dev') {
+        const embed = new Discord.MessageEmbed()
+            .setColor('#00dd00')
+            .setTimestamp()
+            .setAuthor('ForoBot Developer Help Menu (`f!dev`)',client.user.avatarURL({dynamic: true, format: "png", size: 64}))
+            .setDescription('This is the dev help menu.')
+            .addFields(
+                {name:'`f!dev`',value:'This is the main command. Most developer commands start with `f!dev`, unless they interact with the database. Database commands can be seen with `f!help database`.'},
+                {name:'`f!dev channels`',value:'This command allows you to add and remove channels from a server, which is a good tool for support. Running the command will allow you to see the subfunctions of it.'},
+                {name:'`f!dev messages`',value:'This command allows you to send, edit, and delete messages from a channel or using the message ID. Running the command will allow you to see the subfunctions of it.'},
+                {name:'`f!dev access`',value:'This command allows you to add and remove ID\'s from the developer users, as well as locking the access completely. Running the command will allow you to see the subfunctions of it.'},
+                {name:'`f!dev debug`',value:'This command allows you to run debug codes, and can run methods as well. Incorrect usage can crash the bot, which is why this command can only be run by developers.'})
+            .setFooter(`ForoBot Help Menu (${message.author.tag})`);
+        return message.channel.send(embed);
+    };
+    const embed = new Discord.MessageEmbed()
+        .setColor('#00dd00')
+        .setTimestamp()
+        .setAuthor('ForoBot Help Menu',client.user.avatarURL({dynamic: true, format: "png", size: 64}))
+        .setDescription('This is the help menu.')
+        .addFields(
+            {name:'`f!thread`',value:'Type `f!help thread` for the threads help menu.'},
+            {name:'`f!settings`',value:'Type `f!help settings` for the settings help menu.'},
+            {name:'`f!id`',value:'This command allows you to check the ID of a channel or a category.'}
+        )
+        .setFooter(`ForoBot Help Menu (${message.author.tag})`);
+    return message.channel.send(embed);
 };
 
 async function threadCommand(message, args) {
@@ -115,11 +201,16 @@ async function threadCommand(message, args) {
     } else if (args[0] == 'publish') { // Publishing a thread
         const threadCategoryID = await guildThreadCategory.get(message.guild.id);
         const threadCategory = message.guild.channels.cache.get(threadCategoryID);
+        const threadRoleID = await guildThreadRole.get(message.guild.id);
+        const threadRole = message.guild.roles.cache.get(threadRoleID);
         if (message.channel.parentID !== threadCategory.id) {
             return message.channel.send(':no_entry: This command can only be used in threads you created.');
         };
+        if (!message.member.roles.cache.has(threadRole.id)) {
+            return message.channel.send(':no_entry: You no longer have the role required to create threads. This thread will be deleted.').then(m => m.channel.delete('Thread deleted due to lack of thread role.')).catch(console.error);
+        }
         const threadCreator = message.channel.topic.split(' ');
-        if (threadCreator[0] !== message.author.id) {
+        if (threadCreator[0] !== message.author.id || !message.member.roles.cache.has(modRole.id)) {
             return message.channel.send(':no_entry: This command can only be used in threads you created.');
         };
         if (!message.channel.permissionOverwrites.has(threadCreator[0])) {
@@ -160,8 +251,8 @@ async function threadCommand(message, args) {
         const threadCreator = message.channel.topic.split(' ');
         const modRole = await guildModRole.get(message.guild.id);
         if (message.channel.parentID !== threadCategory.id) {
-            return
-        }
+            return message.channel.send(':no_entry: This command can only be used in threads.');
+        };
         if (threadCreator[0] == message.author.id) {
             if (!args[1]) {
                 return message.channel.send(':no_entry: A reason is required. Syntax: `f!thread delete <reason>`.')
