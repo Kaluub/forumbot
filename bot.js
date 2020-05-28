@@ -83,7 +83,10 @@ function helpCommand(message, args) {
                 {name:'`f!thread create {name}` (TR)',value:'Creates a thread. Access the new channel and start typing your new thread.'},
                 {name:'`f!thread publish` (TR)',value:'Publishes a thread. Once a thread is published, anyone can read it and anyone can start replying to it.'},
                 {name:'`f!thread delete` (MR)',value:'Deletes a thread. Once a thread is deleted, nobody can read it and the content is not saved anywhere. This command can also be used by the thread starter.'},
-                {name:'`f!thread lock` (MR)',value:'Locks a thread. Once a thread is locked, anyone can read it but nobody can reply to it.'}
+                {name:'`f!thread lock` (MR)',value:'Locks a thread. Once a thread is locked, anyone can read it but nobody can reply to it.'},
+                {name:'`f!thread unlock` (MR)',value:'Unlocks a thread. Once a thread is unlocked, anyone can read it and reply to it.'},
+                {name:'`f!thread archive` (MR)',value:'Removes a thread from public view, and only allows members with the moderator role to read and respond to it.'},
+                {name:'`f!thread unarchive` (MR)',value:'Returns a thread from hidden view, and allows all members to read and respond to it.'}
             )
             .setFooter(`ForoBot Help Menu (${message.author.tag})`);
         return message.channel.send(embed);
