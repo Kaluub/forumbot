@@ -155,14 +155,14 @@ async function threadCommand(message, args) {
         const modRoleID = await guildModRole.get(message.guild.id);
         const modRole = message.guild.roles.cache.get(modRoleID);
         if (!threadRole) {
-            return message.channel.send(':no_entry: A server administrator must set the thread role using `f!settings role <role ID>` before this command can be used.');
-        }
+            return message.channel.send(':no_entry: A server administrator must set the thread role using `f!settings threadrole <role ID>` before this command can be used.').then(m => m.delete({timeout: 5000}) && message.delete());
+        };
         if (!modRole) {
-            return message.channel.send(':no_entry: A server administrator must set the moderator role using `f!settings modrole <role ID>` before this command can be used.');
-        }
+            return message.channel.send(':no_entry: A server administrator must set the moderator role using `f!settings modrole <role ID>` before this command can be used.').then(m => m.delete({timeout: 5000}) && message.delete());
+        };
         if (!message.member.roles.cache.has(threadRoleID)) {
             return message.channel.send(':no_entry: Performing this action requires the role with name: `' + threadRole.name + '`.');
-        }
+        };
         const threadCategoryID = await guildThreadCategory.get(message.guild.id);
         const threadCategory = message.guild.channels.cache.get(threadCategoryID);
         if (!threadCategory) {
@@ -170,10 +170,10 @@ async function threadCommand(message, args) {
         };
         if (!threadCategory.manageable) {
             return message.channel.send(':no_entry: Thread couldn\'t be created due to the bot lacking permissions in the set guild thread category.');
-        }
+        };
         if (!args[1]) {
-            return message.channel.send(':no_entry: Correct command syntax: `f!thread create <title>`')
-        }
+            return message.channel.send(':no_entry: Correct command syntax: `f!thread create <title>`');
+        };
         args.shift();
         const title = args.join('-');
         message.guild.channels.create(title, {
@@ -184,94 +184,165 @@ async function threadCommand(message, args) {
             permissionOverwrites: [
                 {
                     id: message.author.id,
-                    allow: ['SEND_MESSAGES','VIEW_CHANNEL'],
+                    allow: ['SEND_MESSAGES','VIEW_CHANNEL','READ_MESSAGE_HISTORY'],
                 },
                 {
                     id: message.guild.roles.everyone.id,
-                    deny: ['VIEW_CHANNEL'],
+                    deny: ['SEND_MESSAGES','VIEW_CHANNEL','READ_MESSAGE_HISTORY'],
                 },
                 {
                     id: modRole.id,
-                    allow: ['SEND_MESSAGES','VIEW_CHANNEL','MANAGE_MESSAGES'],
-                }
+                    allow: ['SEND_MESSAGES','VIEW_CHANNEL','READ_MESSAGE_HISTORY','MANAGE_MESSAGES'],
+                },
             ],
             reason: `Thread created by member ${message.author.tag}.`
         }).catch(console.error);
         return message.channel.send(':white_check_mark: Successfully created a new thread.');
+    } else if (args[0] == 'delete') { // Deletes a thread
+        const threadCategoryID = await guildThreadCategory.get(message.guild.id);
+        const threadCategory = message.guild.channels.cache.get(threadCategoryID);
+        const threadCreator = message.channel.topic.split(' ');
+        const modRoleID = await guildModRole.get(message.guild.id);
+        const modRole = message.guild.roles.cache.get(modRoleID);
+        if (!threadCategory) {
+            return message.channel.send(':no_entry: A server administrator must set the thread role using `f!settings threadcategory <category ID>` before this command can be used.').then(m => m.delete({timeout: 5000}) && message.delete());
+        };
+        if (!modRole) {
+            return message.channel.send(':no_entry: A server administrator must set the moderator role using `f!settings modrole <role ID>` before this command can be used.').then(m => m.delete({timeout: 5000}) && message.delete());
+        };
+        if (message.channel.parentID !== threadCategory.id) {
+            return message.channel.send(':no_entry: This command can only be used in threads.').then(m => m.delete({timeout: 5000}) && message.delete());
+        };
+        if (threadCreator[0] == message.author.id || message.member.roles.cache.has(modRole.id)) {
+            if (!args[1]) {
+                return message.channel.send(':no_entry: A reason is required. Syntax: `f!thread delete <reason>`.').then(m => m.delete({timeout: 5000}) && message.delete());
+            };
+            args.shift();
+            const reason = args.join(' ');
+            message.channel.delete(`${reason} (${message.author.tag})`);
+        } else {
+            return message.channel.send(':no_entry: To delete a thread you must either have the moderator role or be the thread creator.').then(m => m.delete({timeout: 5000}) && message.delete());
+        };
     } else if (args[0] == 'publish') { // Publishing a thread
         const threadCategoryID = await guildThreadCategory.get(message.guild.id);
         const threadCategory = message.guild.channels.cache.get(threadCategoryID);
         const threadRoleID = await guildThreadRole.get(message.guild.id);
         const threadRole = message.guild.roles.cache.get(threadRoleID);
+        if (!threadCategory) {
+            return message.channel.send(':no_entry: A server administrator must set the thread role using `f!settings threadrole <role ID>` before this command can be used.').then(m => m.delete({timeout: 5000}) && message.delete());
+        };
+        if (!threadRole) {
+            return message.channel.send(':no_entry: A server administrator must set the moderator role using `f!settings modrole <role ID>` before this command can be used.').then(m => m.delete({timeout: 5000}) && message.delete());
+        };
         if (message.channel.parentID !== threadCategory.id) {
-            return message.channel.send(':no_entry: This command can only be used in threads you created.');
+            return message.channel.send(':no_entry: This command can only be used in threads you created.').then(m => m.delete({timeout: 5000}) && message.delete());
         };
         if (!message.member.roles.cache.has(threadRole.id)) {
             return message.channel.send(':no_entry: You no longer have the role required to create threads. This thread will be deleted.').then(m => m.channel.delete('Thread deleted due to lack of thread role.')).catch(console.error);
-        }
+        };
         const threadCreator = message.channel.topic.split(' ');
-        if (threadCreator[0] !== message.author.id || !message.member.roles.cache.has(modRole.id)) {
-            return message.channel.send(':no_entry: This command can only be used in threads you created.');
+        if (message.author.id !== threadCreator[0]) {
+            return message.channel.send(':no_entry: This command can only be used in threads you created.').then(m => m.delete({timeout: 5000}) && message.delete());
         };
         if (!message.channel.permissionOverwrites.has(threadCreator[0])) {
-            return message.channel.send(':no_entry: This thread is already published.');
+            return message.channel.send(':no_entry: This thread is already published.').then(m => m.delete({timeout: 5000}) && message.delete());
         };
-        message.channel.updateOverwrite(message.guild.roles.everyone.id, {
+        await message.channel.messages.cache.filter(m => m.author.id = threadCreator[0]).forEach(m => m.pin());
+        await message.channel.updateOverwrite(message.guild.roles.everyone.id, {
             VIEW_CHANNEL: true,
             SEND_MESSAGES: true,
+            READ_MESSAGE_HISTORY: true,
         });
-        message.channel.permissionOverwrites.get(threadCreator[0]).delete();
-        message.channel.send(':white_check_mark: Thread successfully published.').then(message.delete())
-    } else if (args[0] == 'lock') {
+        await message.channel.permissionOverwrites.get(threadCreator[0]).delete();
+        return message.channel.send(':white_check_mark: Thread successfully published.').then(m => m.delete({timeout: 5000}) && message.delete());
+    } else if (args[0] == 'lock') { // Locks a thread
         const modRoleID = await guildModRole.get(message.guild.id);
         const modRole = message.guild.roles.cache.get(modRoleID);
         if (!modRole) {
-            return message.channel.send(':no_entry: A server administrator must set the thread mod role using `f!settings modrole <role ID>` before this command can be used.')
-        }
+            return message.channel.send(':no_entry: A server administrator must set the thread mod role using `f!settings modrole <role ID>` before this command can be used.').then(m => m.delete({timeout: 5000}) && message.delete());
+        };
         if (!message.member.roles.cache.has(modRole.id)) {
-            return message.channel.send(':no_entry: To perform this command, you require the role `' + modRole.name + '`.')
-        }
+            return message.channel.send(':no_entry: To perform this command, you require the role `' + modRole.name + '`.').then(m => m.delete({timeout: 5000}) && message.delete());
+        };
         const threadCategory = await guildThreadCategory.get(message.guild.id);
         if (message.channel.parent.id !== threadCategory)  {
-            return message.channel.send(':no_entry: This can only be used in threads.')
-        }
+            return message.channel.send(':no_entry: This can only be used in threads.').then(m => m.delete({timeout: 5000}) && message.delete());
+        };
         if (!args[1]) {
-            return message.channel.send(':no_entry: Provide a reason for locking the thread.')
-        }
+            return message.channel.send(':no_entry: Provide a reason for locking the thread.').then(m => m.delete({timeout: 5000}) && message.delete());
+        };
         args.shift();
-        const reason = args.join(' ')
-        message.channel.updateOverwrite(message.guild.roles.everyone.id, {
+        const reason = args.join(' ');
+        await message.channel.updateOverwrite(message.guild.roles.everyone.id, {
             VIEW_CHANNEL: true,
             SEND_MESSAGES: false,
+            READ_MESSAGE_HISTORY: true,
         });
-        message.channel.send('Thread locked by ' + message.author.tag + '.\n\nReason: ' + reason + '.')
-    } else if (args[0] == 'delete') {
-        const threadCategoryID = await guildThreadCategory.get(message.guild.id);
-        const threadCategory = message.guild.channels.cache.get(threadCategoryID);
-        const threadCreator = message.channel.topic.split(' ');
-        const modRole = await guildModRole.get(message.guild.id);
-        if (message.channel.parentID !== threadCategory.id) {
-            return message.channel.send(':no_entry: This command can only be used in threads.');
+        return message.channel.send('Thread locked by `' + message.author.tag + '`.\n\nReason: ' + reason).then(message.delete()).catch(console.error);
+    } else if (args[0] == 'unlock') { // Unlocks a thread
+        const modRoleID = await guildModRole.get(message.guild.id);
+        const modRole = message.guild.roles.cache.get(modRoleID);
+        if (!modRole) {
+            return message.channel.send(':no_entry: A server administrator must set the thread mod role using `f!settings modrole <role ID>` before this command can be used.').then(m => m.delete({timeout: 5000}) && message.delete());
         };
-        if (threadCreator[0] == message.author.id) {
-            if (!args[1]) {
-                return message.channel.send(':no_entry: A reason is required. Syntax: `f!thread delete <reason>`.')
-            };
-            args.shift();
-            const reason = args.join(' ');
-            message.channel.delete(`${reason} (<@${message.author.id}>)`);
-        } else if (message.member.roles.cache.has(modRole)) {
-            if (!args[1]) {
-                return message.channel.send(':no_entry: A reason is required. Syntax: `f!thread delete <reason>`.')
-            };
-            args.shift();
-            const reason = args.join(' ');
-            message.channel.delete(reason);
-        } else {
-            return message.channel.send(':no_entry: To delete a thread you must either have the moderator role or be the thread creator.')
+        if (!message.member.roles.cache.has(modRole.id)) {
+            return message.channel.send(':no_entry: To perform this command, you require the role `' + modRole.name + '`.').then(m => m.delete({timeout: 5000}) && message.delete());
         };
+        const threadCategory = await guildThreadCategory.get(message.guild.id);
+        if (message.channel.parent.id !== threadCategory)  {
+            return message.channel.send(':no_entry: This can only be used in threads.').then(m => m.delete({timeout: 5000}) && message.delete());
+        };
+        if (!args[1]) {
+            return message.channel.send(':no_entry: Provide a reason for unlocking the thread.').then(m => m.delete({timeout: 5000}) && message.delete());
+        };
+        args.shift();
+        const reason = args.join(' ');
+        await message.channel.updateOverwrite(message.guild.roles.everyone.id, {
+            VIEW_CHANNEL: true,
+            SEND_MESSAGES: true,
+            READ_MESSAGE_HISTORY: true,
+        });
+        return message.channel.send('Thread unlocked by `' + message.author.tag + '`.\n\nReason: ' + reason).then(message.delete()).catch(console.error);
+    } else if (args[0] == 'archive') {
+        const modRoleID = await guildModRole.get(message.guild.id);
+        const modRole = message.guild.roles.cache.get(modRoleID);
+        if (!modRole) {
+            return message.channel.send(':no_entry: A server administrator must set the thread mod role using `f!settings modrole <role ID>` before this command can be used.').then(m => m.delete({timeout: 5000}) && message.delete());
+        };
+        if (!message.member.roles.cache.has(modRole.id)) {
+            return message.channel.send(':no_entry: To perform this command, you require the role `' + modRole.name + '`.').then(m => m.delete({timeout: 5000}) && message.delete());
+        };
+        const threadCategory = await guildThreadCategory.get(message.guild.id);
+        if (message.channel.parent.id !== threadCategory)  {
+            return message.channel.send(':no_entry: This can only be used in threads.').then(m => m.delete({timeout: 5000}) && message.delete());
+        };
+        await message.channel.updateOverwrite(message.guild.roles.everyone.id, {
+            VIEW_CHANNEL: false,
+            SEND_MESSAGES: false,
+            READ_MESSAGE_HISTORY: false,
+        });
+        return message.channel.send(':white_check_mark: Successfully archived this thread, removing it from public view.').then(m => m.delete({timeout: 5000}) && message.delete()).catch(console.error);
+    } else if (args[0] == 'unarchive') {
+        const modRoleID = await guildModRole.get(message.guild.id);
+        const modRole = message.guild.roles.cache.get(modRoleID);
+        if (!modRole) {
+            return message.channel.send(':no_entry: A server administrator must set the thread mod role using `f!settings modrole <role ID>` before this command can be used.').then(m => m.delete({timeout: 5000}) && message.delete());
+        };
+        if (!message.member.roles.cache.has(modRole.id)) {
+            return message.channel.send(':no_entry: To perform this command, you require the role `' + modRole.name + '`.').then(m => m.delete({timeout: 5000}) && message.delete());
+        };
+        const threadCategory = await guildThreadCategory.get(message.guild.id);
+        if (message.channel.parent.id !== threadCategory)  {
+            return message.channel.send(':no_entry: This can only be used in threads.').then(m => m.delete({timeout: 5000}) && message.delete());
+        };
+        await message.channel.updateOverwrite(message.guild.roles.everyone.id, {
+            VIEW_CHANNEL: true,
+            SEND_MESSAGES: true,
+            READ_MESSAGE_HISTORY: true,
+        });
+        return message.channel.send(':white_check_mark: Successfully unarchived this thread, adding it back to public view.').then(m => m.delete({timeout: 5000}) && message.delete()).catch(console.error);
     } else {
-        return message.channel.send(':no_entry: Please use an available subcommand:\n - `create`\n - `publish`');
+        return message.channel.send(':no_entry: Please use an available subcommand:\n - `create`\n - `publish`\n - `delete`\n - `lock`\n - `unlock`\n - `archive`\nSyntax: `f!thread <subcommand>`.').then(m => m.delete({timeout: 5000}) && message.delete());
     };
 };
 
@@ -308,7 +379,7 @@ async function settingsCommand(message, args) {
             const role = await guildThreadRole.get(message.guild.id);
             const roleObject = message.guild.roles.cache.get(role)
             if (!roleObject) {
-                return message.channel.send(':no_entry: Set a thread role using `f!settings role <role ID>`.');
+                return message.channel.send(':no_entry: Set a thread role using `f!settings threadrole <role ID>`.');
             }
             return message.channel.send('Current thread role ID: `' + role + '` (Name: ' + roleObject.name + ').');
         }
