@@ -51,9 +51,7 @@ function handle(message) {
     } else if (command == 'settings') {
         settingsCommand(message, args);
     } else if (command == 'database') {
-        debugDatabase(message, args);
-    } else if (command == 'newdb') {
-        newDatabaseCommand(message, args);
+        databaseCommand(message, args);
     } else if (command == 'dev') {
         devFunctions(message, args);
     } else {
@@ -120,11 +118,10 @@ function helpCommand(message, args) {
             .setDescription('This is the database help menu.')
             .addFields(
                 {name:'`f!database`',value:'This is the main command. Database commands start with `f!database`. Other developer commands can be seen with `f!help dev`.'},
-                {name:'`f!database threadrole [guild ID]`',value:'This command allows you to view data from the thread role database.'},
-                {name:'`f!database threadcategory [guild ID]`',value:'This command allows you to view data from the thread category database.'},
-                {name:'`f!database modrole [guild ID]`',value:'This command allows you to view data from the moderator role database.'},
-                {name:'`f!database add {database} {value 1 (guild ID)} {value 2 (role/channel ID)}`',value:'This command allows you to add/edit data in a database.'},
-                {name:'`f!database remove {database} {value 1 (guild ID)}`',value:'This command allows you to remove data from a database.'})
+                {name:'`f!database view <database> <guild ID>`',value:'This command allows you to view data from the databases.'},
+                {name:'`f!database modify add <database> <value 1 (guild ID)> <value 2 (role/channel ID)>`',value:'This command allows you to edit data in a database.'},
+                {name:'`f!database modify remove <database> <value 1 (guild ID)>`',value:'This command allows you to remove data from a database.'},
+                {name:'Databases:',value:'These are the databases that are usable within the commands.\n - `threadcategory`\n - `threadrole`\n - `modrole`'})
             .setFooter(`ForoBot Help Menu (${message.author.tag})`);
         return message.channel.send(embed);
     };
@@ -627,124 +624,7 @@ async function devFunctions(message, args) {
     return message.channel.send(':no_entry: Invalid function. Valid functions:\n - `channels`\n - `messages`\n - `access`\n - `debug`\n - `shard`\nSyntax: `f!dev <function>`.');
 };
 
-async function debugDatabase(message, args) {
-    if (!devAccessArray.includes(message.author.id)) {
-        return message.channel.send(':no_entry: Using this command requires developer access.');
-    };
-    if (args[0] == 'threadrole') {
-        if (args[1]) {
-            const role = await guildThreadRole.get(args[1]);
-            if (!role) {
-                return message.channel.send(':no_entry: The guild hasn\'t set a thread role yet.');
-            };
-            const guildObject = client.guilds.cache.get(args[1]);
-            if (!guildObject) {
-                return message.channel.send(':no_entry: This guild doesn\'t seem to exist.');
-            };
-            const roleObject = guildObject.roles.cache.get(role).catch(console.error());
-            if (roleObject) {
-                return message.channel.send('Thread role ID in database: `' + role + '`. Role name: `'+ roleObject.name + '`. Guild ID: `' + args[1] +'`.');
-            };
-            return message.channel.send('Thread role ID in database: `' + role + '`. Guild ID: `' + guildObject.id +'`.');
-        };
-        const role = await guildThreadRole.get(message.guild.id);
-        if (!role) {
-            return message.channel.send(':no_entry: The guild hasn\'t set a thread role yet.');
-        };
-        const guildObject = client.guilds.cache.get(message.guild.id);
-        const roleObject = guildObject.roles.cache.get(role);
-        return message.channel.send('Thread role ID in database: `' + role + '`. Role name: `' + roleObject.name + '`.');
-    } else if (args[0] == 'threadcategory') {
-        if (args[1]) {
-            const category = await guildThreadCategory.get(args[1]);
-            const categoryGuildObject = client.guilds.cache.get(args[1]);
-            const categoryObject = categoryGuildObject.channels.cache.get(category).catch(message.channel.send(':no_entry: This guild ID doesn\'t exist.'));
-            if (categoryObject) {
-                return message.channel.send('Thread category ID in database: `' + category + '`. Category name: `'+ categoryObject.name + '`. Guild ID: `' + args[1] +'`.');
-            };
-            return message.channel.send('Thread category ID in database: `' + category + '`. Guild ID: `' + args[1] +'`.');
-        };
-        const category = await guildThreadCategory.get(message.guild.id);
-        if (!category) {
-            return message.channel.send(':no_entry: The guild hasn\'t set a thread category yet.');
-        };
-        const categoryObject = client.channels.cache.get(category);
-        return message.channel.send('Thread category ID in database: `' + category + '`. Category name: `' + categoryObject.name + '`.');
-    } else if (args[0] == 'modrole') {
-        if (args[1]) {
-            const modRole = await guildModRole.get(args[1]);
-            const modRoleGuildObject = client.guilds.cache.get(args[1]);
-            const modRoleObject = modRoleGuildObject.roles.cache.get(modRole);
-            if (modRoleObject) {
-                return message.channel.send('Thread moderator role ID in database: `' + modRole + '`. Role name: `'+ modRoleObject.name + '`. Guild ID: `' + args[1] +'`.');
-            };
-            return message.channel.send('Thread moderator role ID in database: `' + modRole + '`. Guild ID: `' + args[1] +'`.');
-        };
-        const modRole = await guildModRole.get(message.guild.id);
-        const modRoleObject = message.guild.roles.cache.get(modRole);
-        return message.channel.send('Thread moderator role ID in database: `' + modRole + '`. Role name: `' + modRoleObject.name + '`.');
-    } else if (args[0] == 'add') {
-        if (args[1] == 'threadrole') {
-            if (args[2] && args[3]) {
-                await guildThreadRole.set(args[2], args[3]);
-                console.log(`Artificial addition to guildThreadRole database. Value 1: ${args[2]}. Value 2: ${args[3]}.`);
-                return message.channel.send(`:white_check_mark: Successfully added value \`${args[2]}\` and value \`${args[3]}\` into the guildThreadRole database.`);
-            } else {
-                return message.channel.send(':no_entry: Insufficient values.');
-            }
-        } else if (args[1] == 'threadcategory') {
-            if (args[2] && args[3]) {
-                await guildThreadCategory.set(args[3], args[4]);
-                console.log(`Artificial addition to guildThreadCategory database. Value 1: ${args[2]}. Value 2: ${args[3]}.`);
-                return message.channel.send(`:white_check_mark: Successfully added value \`${args[2]}\` and value \`${args[3]}\` into the guildThreadCategory database.`);
-            } else {
-                return message.channel.send(':no_entry: Insufficient values.');
-            }
-        } else if (args[1] == 'modrole') {
-            if (args[2] && args[3]) {
-                await guildModRole.set(args[3], args[4]);
-                console.log(`Artificial addition to guildModRole database. Value 1: ${args[2]}. Value 2: ${args[3]}.`);
-                return message.channel.send(`:white_check_mark: Successfully added value \`${args[2]}\` and value \`${args[3]}\` into the guildModRole database.`);
-            } else {
-                return message.channel.send(':no_entry: Insufficient values.');
-            };
-        } else {
-            return message.channel.send(':no_entry: Invalid function. Valid functions:\n - `threadrole`\n - `threadcategory`\n - `modrole`\nSyntax: `f!database add <function>`.');
-        };
-    } else if (args[0] == 'remove') {
-        if (args[1] == 'threadrole') {
-            if (args[2]) {
-                await guildThreadRole.delete(args[2]).catch(console.error);
-                console.log(`Artificial substraction to guildThreadRole database. Value 1: ${args[2]}.`);
-                return message.channel.send(`:white_check_mark: Successfully removed value \`${args[2]}\` from the guildThreadRole database.`);
-            } else {
-                return message.channel.send(':no_entry: Insufficient values.');
-            };
-        } else if (args[1] == 'threadcategory') {
-            if (args[2]) {
-                await guildThreadCategory.delete(args[2]).catch(console.error);
-                console.log(`Artificial substraction to guildThreadCategory database. Value 1: ${args[2]}.`);
-                return message.channel.send(`:white_check_mark: Successfully removed value \`${args[2]}\` from the guildThreadCategory database.`)
-            } else {
-                return message.channel.send(':no_entry: Insufficient values.');
-            };
-        } else if (args[1] == 'modrole') {
-            if (args[2]) {
-                await guildModRole.delete(args[2]).catch(console.error);
-                console.log(`Artificial substraction to guildModRole database. Value 1: ${args[2]}.`);
-                return message.channel.send(`:white_check_mark: Successfully removed value \`${args[2]}\` from the guildModRole database.`)
-            } else {
-                return message.channel.send(':no_entry: Insufficient values.');
-            };
-        } else {
-            return message.channel.send(':no_entry: Invalid function. Valid functions:\n - `threadrole`\n - `threadcategory`\n - `modrole`\nSyntax: `f!database remove <function>`.');
-        };
-    } else {
-        return message.channel.send(':no_entry: Invalid function. Valid functions:\n - `threadrole`\n - `threadcategory`\n - `modrole`\n - `add`\n - `remove`\nSyntax: `f!database <function>`.')
-    };
-};
-
-async function newDatabaseCommand (message, args) {
+async function databaseCommand (message, args) {
     if (!devAccessArray.includes(message.author.id)) {
         return message.channel.send(':no_entry: Using this command requires developer access.');
     };
