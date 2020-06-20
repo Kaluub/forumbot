@@ -4,22 +4,26 @@ const config = require('./private/config.json');
 const Keyv = require('keyv');
 const prefix = 'f!';
 const version = 'b0.3';
-const devAccessArray = ['461564949768962048','460515032917344268'];
+const devAccessArray = ['461564949768962048'];
 
 const guildModRole = new Keyv('sqlite://private/models/GuildSettings.sqlite', { namespace: 'modRole' } );
 const guildThreadRole = new Keyv('sqlite://private/models/GuildSettings.sqlite', { namespace: 'threadRole' } );
 const guildThreadCategory = new Keyv('sqlite://private/models/GuildSettings.sqlite', { namespace: 'threadCategories' } );
 
 client.once('ready', () => {
-	console.log('ForoBot Started running version: ' + version);
-    client.user.setActivity('f!help', {type: 'WATCHING'})
+    if (client.shard) {
+        console.log(`Shard ${client.shard.ids} started running version: ${version}`);
+    } else {
+        console.log(`ForoBot started running version: ${version}`);
+    };
+    client.user.setActivity('f!help', {type: 'WATCHING'});
 });
 
 client.on('guildCreate', (guild) => {
     if (guild.me.permissions.has('ADMINISTRATOR')) {
         return
-    }
-    guild.leave()
+    };
+    guild.leave();
 });
 
 client.on('message', (message) => {
@@ -48,6 +52,8 @@ function handle(message) {
         settingsCommand(message, args);
     } else if (command == 'database') {
         debugDatabase(message, args);
+    } else if (command == 'newdb') {
+        newDatabaseCommand(message, args);
     } else if (command == 'dev') {
         devFunctions(message, args);
     } else {
@@ -610,25 +616,44 @@ async function devFunctions(message, args) {
             return console.error
         };
     };
-    return message.channel.send(':no_entry: Invalid function. Valid functions:\n - `channels`\n - `messages`\n - `access`\n - `debug`\nSyntax: `f!dev <function>`.')
+    if (args[0] == 'shard') {
+        if (!client.shard) {
+            return message.channel.send(':no_entry: The bot isn\'t running from a shardManager.');
+        };
+        const shardID = client.shard.ids;
+        const shardGuilds = await client.shard.fetchClientValues('guilds.cache.size');
+        return message.channel.send(`Shard Info:\n - Shard ID: \`${shardID}\`\n - Shard Guilds: \`${shardGuilds}\`\n - Total Shards: \`${client.shard.count}\``);
+    };
+    return message.channel.send(':no_entry: Invalid function. Valid functions:\n - `channels`\n - `messages`\n - `access`\n - `debug`\n - `shard`\nSyntax: `f!dev <function>`.');
 };
 
 async function debugDatabase(message, args) {
     if (!devAccessArray.includes(message.author.id)) {
-        return message.channel.send(':no_entry: Using this command requires developer access.')
+        return message.channel.send(':no_entry: Using this command requires developer access.');
     };
     if (args[0] == 'threadrole') {
         if (args[1]) {
             const role = await guildThreadRole.get(args[1]);
-            const roleGuildObject = client.guilds.cache.get(args[1]);
-            const roleObject = roleGuildObject.roles.cache.get(role).catch(message.channel.send(':no_entry: This guild ID doesn\'t exist.'));
+            if (!role) {
+                return message.channel.send(':no_entry: The guild hasn\'t set a thread role yet.');
+            };
+            const guildObject = client.guilds.cache.get(args[1]);
+            if (!guildObject) {
+                return message.channel.send(':no_entry: This guild doesn\'t seem to exist.');
+            };
+            const roleObject = guildObject.roles.cache.get(role).catch(console.error());
             if (roleObject) {
                 return message.channel.send('Thread role ID in database: `' + role + '`. Role name: `'+ roleObject.name + '`. Guild ID: `' + args[1] +'`.');
             };
-            return message.channel.send('Thread role ID in database: `' + role + '`. Guild ID: `' + args[1] +'`.');
+            return message.channel.send('Thread role ID in database: `' + role + '`. Guild ID: `' + guildObject.id +'`.');
         };
         const role = await guildThreadRole.get(message.guild.id);
-        return message.channel.send('Thread role ID in database: `' + role + '`.');
+        if (!role) {
+            return message.channel.send(':no_entry: The guild hasn\'t set a thread role yet.');
+        };
+        const guildObject = client.guilds.cache.get(message.guild.id);
+        const roleObject = guildObject.roles.cache.get(role);
+        return message.channel.send('Thread role ID in database: `' + role + '`. Role name: `' + roleObject.name + '`.');
     } else if (args[0] == 'threadcategory') {
         if (args[1]) {
             const category = await guildThreadCategory.get(args[1]);
@@ -640,19 +665,24 @@ async function debugDatabase(message, args) {
             return message.channel.send('Thread category ID in database: `' + category + '`. Guild ID: `' + args[1] +'`.');
         };
         const category = await guildThreadCategory.get(message.guild.id);
-        return message.channel.send('Thread category ID in database: `' + category + '`.');
+        if (!category) {
+            return message.channel.send(':no_entry: The guild hasn\'t set a thread category yet.');
+        };
+        const categoryObject = client.channels.cache.get(category);
+        return message.channel.send('Thread category ID in database: `' + category + '`. Category name: `' + categoryObject.name + '`.');
     } else if (args[0] == 'modrole') {
         if (args[1]) {
             const modRole = await guildModRole.get(args[1]);
-            const modRoleGuildObject = client.guilds.cache.get(args[1])
-            const modRoleObject = modRoleGuildObject.roles.cache.get(modRole)
+            const modRoleGuildObject = client.guilds.cache.get(args[1]);
+            const modRoleObject = modRoleGuildObject.roles.cache.get(modRole);
             if (modRoleObject) {
                 return message.channel.send('Thread moderator role ID in database: `' + modRole + '`. Role name: `'+ modRoleObject.name + '`. Guild ID: `' + args[1] +'`.');
             };
             return message.channel.send('Thread moderator role ID in database: `' + modRole + '`. Guild ID: `' + args[1] +'`.');
         };
-        const modrole = await guildModRole.get(message.guild.id);
-        return message.channel.send('Thread moderator role ID in database: `' + modrole + '`.');
+        const modRole = await guildModRole.get(message.guild.id);
+        const modRoleObject = message.guild.roles.cache.get(modRole);
+        return message.channel.send('Thread moderator role ID in database: `' + modRole + '`. Role name: `' + modRoleObject.name + '`.');
     } else if (args[0] == 'add') {
         if (args[1] == 'threadrole') {
             if (args[2] && args[3]) {
@@ -712,5 +742,151 @@ async function debugDatabase(message, args) {
     } else {
         return message.channel.send(':no_entry: Invalid function. Valid functions:\n - `threadrole`\n - `threadcategory`\n - `modrole`\n - `add`\n - `remove`\nSyntax: `f!database <function>`.')
     };
+};
+
+async function newDatabaseCommand (message, args) {
+    if (!devAccessArray.includes(message.author.id)) {
+        return message.channel.send(':no_entry: Using this command requires developer access.');
+    };
+    if (!args[0]) {
+        return message.channel.send(':no_entry: Unknown subcommand. Please run `f!help database` to view all valid subcommands.');
+    };
+    if (args[0] == 'read' || args[0] == 'view') {
+        if (!args[1]) {
+            return message.channel.send(':no_entry: Invalid syntax. Correct syntax: `f!database read <database> [server ID]`.\nValid databases: `threadcategory`, `threadrole`, `modrole`.');
+        };
+        if (args[1] == 'threadcategory') {
+            if (args[2]) {
+                const guildID = args[2];
+                const threadCategory = await guildThreadCategory.get(guildID);
+                const category = await client.channels.cache.get(threadCategory);
+                if (!category) {
+                    return message.channel.send(':no_entry: This server does not have a thread category set, or it is invalid.');
+                };
+                return message.channel.send(`Guild thread category ID: \`${category.id}\` (Name: \`${category.name}\`).`);
+            } else  {
+                const threadCategory = await guildThreadCategory.get(message.guild.id);
+                const category = await message.guild.channels.cache.get(threadCategory);
+                if (!category) {
+                    return message.channel.send(':no_entry: This server does not have a thread category set, or it is invalid.');
+                };
+                return message.channel.send(`Guild thread category ID: \`${category.id}\` (Name: \`${category.name}\`).`);
+            };
+        };
+        if (args[1] == 'threadrole') {
+            if (args[2]) {
+                const guildID = args[2];
+                const threadRole = await guildThreadRole.get(guildID);
+                const guild = await client.guilds.cache.get(guildID);
+                if (!guild) {
+                    return message.channel.send(':no_entry: Invalid guild ID.');
+                };
+                const role = await guild.roles.cache.get(threadRole);
+                if (!role) {
+                    return message.channel.send(':no_entry: This server does not have a thread role set, or it is invalid.');
+                };
+                return message.channel.send(`Guild thread role ID: \`${role.id}\` (Name: \`${role.name}\`).`);
+            } else {
+                const threadRole = await guildThreadRole.get(message.guild.id);
+                const role = await message.guild.roles.cache.get(threadRole);
+                if (!role) {
+                    return message.channel.send(':no_entry: This server does not have a thread role set, or it is invalid.');
+                };
+                return message.channel.send(`Guild thread role ID: \`${role.id}\` (Name: \`${role.name}\`).`);
+            };
+        };
+        if (args[1] == 'modrole') {
+            if (args[2]) {
+                const guildID = args[2];
+                const modRole = await guildModRole.get(guildID);
+                const guild = await client.guilds.cache.get(guildID);
+                if (!guild) {
+                    return message.channel.send(':no_entry: Invalid guild ID.');
+                };
+                const role = await guild.roles.cache.get(modRole);
+                if (!role) {
+                    return message.channel.send(':no_entry: This server does not have a mod role set, or it is invalid.');
+                };
+                return message.channel.send(`Guild mod role ID: \`${role.id}\` (Name: \`${role.name}\`).`);
+            } else {
+                const threadRole = await guildModRole.get(message.guild.id);
+                const role = await message.guild.roles.cache.get(threadRole);
+                if (!role) {
+                    return message.channel.send(':no_entry: This server does not have a mod role set, or it is invalid.');
+                };
+                return message.channel.send(`Guild mod role ID: \`${role.id}\` (Name: \`${role.name}\`).`);
+            };
+        };
+        return message.channel.send(':no_entry: Invalid syntax. Correct syntax: `f!database read <database> [server ID]`.\nValid databases: `threadcategory`, `threadrole`, `modrole`.')
+    };
+    if (args[0] == 'modify') {
+        if (!args[1]) {
+            return message.channel.send(':no_entry: Invalid syntax. Correct syntax: `f!database modify <add/remove>`');
+        };
+        if (args[1] == 'add') {
+            if (!args[2]) {
+                return message.channel.send(':no_entry: Invalid syntax. Correct syntax: `f!database modify add <database> <guild ID> <value>`\nValid databases: `threadcategory`, `threadrole`, `modrole`.');
+            };
+            if (args[2] == 'threadcategory') {
+                if (!args[3] || !args[4]) {
+                    return message.channel.send(':no_entry: Invalid syntax. Correct syntax: `f!database modify add threadcategory <guild ID> <value>`');
+                };
+                const value1 = args[3];
+                const value2 = args[4];
+                await guildThreadCategory.set(value1, value2).then(message.channel.send(`Successfully set the thread category for guild \`${value1}\` with value \`${value2}\`.`)).catch(console.error);
+                return
+            };
+            if (args[2] == 'threadrole') {
+                if (!args[3] || !args[4]) {
+                    return message.channel.send(':no_entry: Invalid syntax. Correct syntax: `f!database modify add threadrole <guild ID> <value>`');
+                };
+                const value1 = args[3];
+                const value2 = args[4];
+                await guildThreadRole.set(value1, value2).then(message.channel.send(`Successfully set the thread role for guild \`${value1}\` with value \`${value2}\`.`)).catch(console.error);
+                return
+            };
+            if (args[2] == 'modrole') {
+                if (!args[3] || !args[4]) {
+                    return message.channel.send(':no_entry: Invalid syntax. Correct syntax: `f!database modify add modrole <guild ID> <value>`');
+                };
+                const value1 = args[3];
+                const value2 = args[4];
+                await guildModRole.set(value1, value2).then(message.channel.send(`Successfully set the mod role for guild \`${value1}\` with value \`${value2}\`.`)).catch(console.error);
+                return
+            };
+            return message.channel.send(':no_entry: Invalid syntax. Correct syntax: `f!database modify add <database> <guild ID> <value>`\nValid databases: `threadcategory`, `threadrole`, `modrole`.');
+        };
+        if (args[1] == 'remove') {
+            if (!args[2]) {
+                return message.channel.send(':no_entry: Invalid syntax. Correct syntax: `f!database modify remove <database> <guild ID>`\nValid databases: `threadcategory`, `threadrole`, `modrole`.');
+            };
+            if (args[2] == 'threadcategory') {
+                if (!args[3]) {
+                    return message.channel.send(':no_entry: Invalid syntax. Correct syntax: `f!database modify remove threadcategory <guild ID>`');
+                };
+                const value1 = args[3];
+                await guildThreadCategory.delete(value1).then(message.channel.send(`Successfully deleted the thread category for guild \`${value1}\`.`)).catch(console.error);
+                return
+            };
+            if (args[2] == 'threadrole') {
+                if (!args[3]) {
+                    return message.channel.send(':no_entry: Invalid syntax. Correct syntax: `f!database modify remove threadrole <guild ID>`');
+                };
+                const value1 = args[3];
+                await guildThreadRole.delete(value1).then(message.channel.send(`Successfully deleted the thread role for guild \`${value1}\`.`)).catch(console.error);
+                return
+            };
+            if (args[2] == 'modrole') {
+                if (!args[3]) {
+                    return message.channel.send(':no_entry: Invalid syntax. Correct syntax: `f!database modify remove modrole <guild ID>`');
+                };
+                const value1 = args[3];
+                await guildModRole.delete(value1).then(message.channel.send(`Successfully deleted the thread role for guild \`${value1}\`.`)).catch(console.error);
+                return
+            };
+            return message.channel.send(':no_entry: Invalid syntax. Correct syntax: `f!database modify remove <database> <guild ID>`\nValid databases: `threadcategory`, `threadrole`, `modrole`.');
+        };
+    };
+    return message.channel.send(':no_entry: Unknown subcommand. Please run `f!help database` to view all valid subcommands.');
 };
 client.login(config.token);
