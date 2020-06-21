@@ -26,7 +26,7 @@ Replace "your-bot-token-here" with the token found under the bot section at http
 Lastly, to start your bot, you will need to run the command `node bot.js` (or `node index.js` if you plan on using sharding, which runs the bot multiple times).
 
 # Addons
-An unique feature to running this bot software for yourself is that you can run addons, which are JavaScript files that contain an object with a new command. You can install any number of addons that you desire as well.
+An unique feature to running this bot software for yourself is that you can run addons, which are JavaScript files that contain an object with a new command. You can install any number of addons that you desire as well. Addons also overwrite existing commands, meaning you could create a "better" help command, or completely rewrite some existing commands to simplify it.
 
 To install an addon, simply put the JavaScript file in the "addons" folder.
 
