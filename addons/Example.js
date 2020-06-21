@@ -1,5 +1,3 @@
-const { version } = require("discord.js");
-
 module.exports = {
     command: 'test',
     version: '1',
