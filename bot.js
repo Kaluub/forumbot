@@ -1,10 +1,19 @@
-const Discord = require('discord.js');
-const client = new Discord.Client();
-const config = require('./private/config.json');
+const fs = require('fs');
 const Keyv = require('keyv');
+const Discord = require('discord.js');
+const config = require('./private/config.json');
+
+const client = new Discord.Client();
 const prefix = 'f!';
-const version = 'b0.3';
+const version = 'v0.3.2';
 const devAccessArray = ['461564949768962048'];
+
+client.addons = new Discord.Collection();
+const addonFiles = fs.readdirSync('./addons').filter(file => file.endsWith('.js'));
+for (const file of addonFiles) {
+    const addon = require(`./addons/${file}`);
+    client.addons.set(addon.command, addon);
+};
 
 const guildModRole = new Keyv('sqlite://private/models/GuildSettings.sqlite', { namespace: 'modRole' } );
 const guildThreadRole = new Keyv('sqlite://private/models/GuildSettings.sqlite', { namespace: 'threadRole' } );
@@ -36,14 +45,25 @@ client.on('message', (message) => {
     }
 });
 
-function handle(message) {
+async function handle(message) {
     const args = message.content.slice(prefix.length).split(/ +/);
     const command = args.shift().toLowerCase();
     
-    console.log('Command received: Command = ' + command + '. Arguments = ' + args + '. Sender: ' + message.author.tag + '.');
-
+    if (client.addons.has(command)) {
+        const addon = client.addons.get(command);
+        if (addon.version !== '1') {
+            return message.channel.send(':no_entry: This addon is outdated and needs to be updated by it\'s developer. If you can reach out to them, make sure to let them know!')
+        };
+        try {
+            addon.execute(message, args);
+        } catch (error) {
+            console.error(error);
+            message.channel.send(':no_entry: The addon function failed.');
+        };
+        return
+    };
     if (command == 'help') {
-        helpCommand(message, args)
+        helpCommand(message, args);
     } else if (command == 'id') {
         channelID(message, args);
     } else if (command == 'thread') {
