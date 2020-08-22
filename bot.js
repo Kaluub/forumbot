@@ -622,15 +622,15 @@ async function devFunctions(message, args) {
         if (!args[1]) {
             return message.channel.send(':no_entry: Provide a valid D.JS function to return.');
         };
-        const debugArray = args
+        const debugArray = args;
         debugArray.shift();
         const debug = debugArray.join(' ');
         try {
             let evaled = await eval(debug);
-            console.log(evaled)
+            console.log(evaled);
             return message.channel.send(`Return value:\n\`\`\`${evaled}\`\`\``);
         } catch (err) {
-            return console.error
+            return console.error(err);
         };
     };
     if (args[0] == 'shard') {
