@@ -45,4 +45,5 @@ module.exports = {
     },
 };
 ```
-Other than that, this softwre is still in development. If you find any crashes, bugs, or well, anything unintended, please write a issue on GitHub and I will try to get them fixed.
+
+Other than that, this software is no longer in active development. If you find any crashes, bugs, or  anything unintended, please write a issue on GitHub and I can try to get them fixed.
