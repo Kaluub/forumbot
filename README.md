@@ -23,6 +23,8 @@ In your "config.json" file, simply copy:
 ```
 Replace "your-bot-token-here" with the token found under the bot section at https://discord.com/developers/applications.
 
+Be sure to create a folder called `models` within the `/private/` directory.
+
 Lastly, to start your bot, you will need to run the command `node bot.js` (or `node index.js` if you plan on using sharding, which runs the bot multiple times).
 
 # Addons
